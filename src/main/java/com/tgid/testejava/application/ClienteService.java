@@ -45,14 +45,31 @@ public class ClienteService {
     public void newDeposit(TransactionInformation transaction) throws Exception {
         Cliente cliente = this.findClienteByCpf(transaction.cpf());
         Empresa empresa = this.empresaService.findEmpresaByCnpj(transaction.cnpj());
+
+        empresa.setSaldo(empresa.getSaldo().add(transaction.value()));
+        this.empresaService.saveEmpresa(empresa);
+        
+        sendCallback(this.createTransactionInformation(transaction.value(), "Deposit", transaction.cpf(), transaction.cnpj()));
+        
+        String body = String.format("Depósito no valor de %s para CNPJ: %s do CPF: %s", transaction.value(), transaction.cnpj(), transaction.cpf());
+        emailSenderService.sendEmail(cliente.getEmail(), "Deposito", body);
+    }
+
+    public void newWithdraw(TransactionInformation transaction) throws Exception {
+        Cliente cliente = this.findClienteByCpf(transaction.cpf());
+        Empresa empresa = this.empresaService.findEmpresaByCnpj(transaction.cnpj());
+
         if (empresa.getSaldo().compareTo(transaction.value()) < 0) {
             throw new Error("Saldo insuficiente");
         }
-        String body = String.format("Depósito no valor de %s para CNPJ: %s do CPF: %s", transaction.value(), transaction.cnpj(), transaction.cpf());
-        empresa.setSaldo(empresa.getSaldo().add(transaction.value()));
-        TransactionInformation teste = this.createTransactionInformation(transaction.value(), "Deposit", transaction.cpf(), transaction.cnpj());
-        sendCallback(teste);
-        emailSenderService.sendEmail(cliente.getEmail(), "Deposito", body);
+
+        empresa.setSaldo(empresa.getSaldo().subtract(transaction.value()));
+        this.empresaService.saveEmpresa(empresa);
+        
+        sendCallback(this.createTransactionInformation(transaction.value(), "Saque", transaction.cpf(), transaction.cnpj()));
+
+        String body = String.format("Saque no valor de %s para CPF: %s do CNPJ: %s", transaction.value(), transaction.cpf(), transaction.cnpj());
+        emailSenderService.sendEmail(cliente.getEmail(), "Saque", body);
     }
     
 

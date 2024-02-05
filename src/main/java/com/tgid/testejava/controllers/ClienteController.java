@@ -37,12 +37,22 @@ public class ClienteController {
     }
 
     @PostMapping("/deposit")
-    public ResponseEntity<String> doWithdraw(@RequestBody TransactionInformation transactionInformation) throws Exception {
+    public ResponseEntity<String> doDeposit(@RequestBody TransactionInformation transactionInformation) throws Exception {
         try {
             clienteService.newDeposit(transactionInformation);
             return ResponseEntity.ok("Deposit successfully!");
         } catch (EmailServiceException ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Deposit failed.");
+        }
+    }
+
+    @PostMapping("/withdraw")
+    public ResponseEntity<String> doWithdraw(@RequestBody TransactionInformation transactionInformation) throws Exception {
+        try {
+            clienteService.newDeposit(transactionInformation);
+            return ResponseEntity.ok("Withdrawsuccessfully!");
+        } catch (EmailServiceException ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Withdraw failed.");
         }
     }
 }
