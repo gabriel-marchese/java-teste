@@ -7,9 +7,13 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
+
+import com.tgid.testejava.dtos.EmpresaDto;
+
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity(name="empresas")
@@ -17,6 +21,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @AllArgsConstructor
+@NoArgsConstructor
 @EqualsAndHashCode(of="id")
 public class Empresa {
   @Id
@@ -27,4 +32,10 @@ public class Empresa {
 
   private BigDecimal saldo;
   private BigDecimal taxa;
+
+  public Empresa(EmpresaDto data) {
+    this.cnpj = data.cnpj();
+    this.saldo = data.saldo();
+    this.taxa = data.taxa();
+  }
 }

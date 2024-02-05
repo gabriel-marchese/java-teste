@@ -1,5 +1,12 @@
 package com.tgid.testejava.application;
 
+import com.tgid.testejava.domain.cliente.Cliente;
+import com.tgid.testejava.domain.empresa.Empresa;
+import com.tgid.testejava.dtos.ClienteDto;
+import com.tgid.testejava.repositories.ClienteRepository;
+
+import java.math.BigDecimal;
+import java.util.List;
 import java.util.Random;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,29 +18,58 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import com.tgid.testejava.adapters.ClienteGateway;
 import com.tgid.testejava.core.TransactionInformation;
 import com.tgid.testejava.core.exceptions.CallbackException;
 
 @Service
 public class ClienteService {
 
-    private final ClienteGateway clienteGateway;
+    private final EmailSenderService emailSenderService;
 
     @Autowired
-    public ClienteService(ClienteGateway clienteGateway) {
-        this.clienteGateway = clienteGateway;
+    public ClienteService(EmailSenderService emailSenderService) {
+        this.emailSenderService = emailSenderService;
+    }
+    
+    @Autowired
+    private EmpresaService empresaService;
+
+    @Autowired
+    private ClienteRepository repository;
+
+    public Cliente findClienteByCpf(String cpf) throws Exception {
+        return this.repository.findUserByCpf(cpf).orElseThrow(
+            () -> new Exception("Cliente não encontrado"));
     }
 
-    public void doDeposit(TransactionInformation transactionInformation) {
-        clienteGateway.doDeposit(transactionInformation.cnpj(), transactionInformation.valueInCents());
-        sendCallback(createTransactionInformation(transactionInformation.valueInCents(), "Deposito", transactionInformation.cnpj(), transactionInformation.cpf()));
+    public void newDeposit(TransactionInformation transaction) throws Exception {
+        Cliente cliente = this.findClienteByCpf(transaction.cpf());
+        Empresa empresa = this.empresaService.findEmpresaByCnpj(transaction.cnpj());
+        if (empresa.getSaldo().compareTo(transaction.value()) < 0) {
+            throw new Error("Saldo insuficiente");
+        }
+        String body = String.format("Depósito no valor de %s para CNPJ: %s do CPF: %s", transaction.value(), transaction.cnpj(), transaction.cpf());
+        empresa.setSaldo(empresa.getSaldo().add(transaction.value()));
+        TransactionInformation teste = this.createTransactionInformation(transaction.value(), "Deposit", transaction.cpf(), transaction.cnpj());
+        sendCallback(teste);
+        emailSenderService.sendEmail(cliente.getEmail(), "Deposito", body);
+    }
+    
+
+    public void saveCliente(Cliente cliente) {
+        this.repository.save(cliente);
     }
 
-    public void doWithdraw(TransactionInformation transactionInformation) {
-        clienteGateway.doWithdraw(transactionInformation.cnpj(), transactionInformation.valueInCents());
-        sendCallback(createTransactionInformation(transactionInformation.valueInCents(), "Saque", transactionInformation.cnpj(), transactionInformation.cpf()));
+    public Cliente createCliente(ClienteDto data) {
+        Cliente newCliente = new Cliente(data);
+        this.saveCliente(newCliente);
+        return newCliente;
     }
+
+    public List<Cliente> getAllClientes() {
+       return this.repository.findAll();
+    }
+    
 
     @Value("${url}")
     private String empresaCallbackUrl;
@@ -47,9 +83,9 @@ public class ClienteService {
         int transactionId = random.nextInt(100000);
 
         String callbackBody = String.format(
-            "{ \"transactionId\": %d, \"valueInCents\": %d, \"type\": \"%s\", \"cpf\": \"%s\", \"cnpj\": \"%s\" }",
+            "{ \"transactionId\": %d, \"value\": %s, \"type\": \"%s\", \"cpf\": \"%s\", \"cnpj\": \"%s\" }",
             transactionId,
-            transactionInformation.valueInCents(),
+            transactionInformation.value(),
             transactionInformation.type(),
             transactionInformation.cpf(),
             transactionInformation.cnpj()
@@ -66,7 +102,7 @@ public class ClienteService {
         }
     }
 
-    private TransactionInformation createTransactionInformation(Integer valueInCents, String type, String cpf, String cnpj) {
-        return new TransactionInformation(valueInCents, type, cpf, cnpj);
+    private TransactionInformation createTransactionInformation(BigDecimal value, String type, String cpf, String cnpj) {
+        return new TransactionInformation(value, type, cpf, cnpj);
     }
 }

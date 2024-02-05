@@ -1,3 +1,5 @@
 package com.tgid.testejava.core;
 
-public record TransactionInformation(Integer valueInCents, String type ,String cpf, String cnpj) {}
+import java.math.BigDecimal;
+
+public record TransactionInformation(BigDecimal value, String type ,String cpf, String cnpj) {}
