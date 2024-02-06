@@ -23,6 +23,12 @@ public class ClienteController {
     
     @Autowired
     private ClienteService clienteService;
+    
+    @GetMapping
+    public ResponseEntity<List<Cliente>> getAllClientes() {
+       List<Cliente> clientes = this.clienteService.getAllClientes();
+       return ResponseEntity.status(HttpStatus.CREATED).body(clientes);
+    }
 
     @PostMapping("/register")
     public ResponseEntity<Cliente> newCliente(@RequestBody ClienteDto cliente) {
@@ -30,17 +36,11 @@ public class ClienteController {
        return ResponseEntity.status(HttpStatus.CREATED).body(newCliente);
     }
 
-    @GetMapping
-    public ResponseEntity<List<Cliente>> getAllClientes() {
-       List<Cliente> clientes = this.clienteService.getAllClientes();
-       return ResponseEntity.status(HttpStatus.CREATED).body(clientes);
-    }
-
     @PostMapping("/deposit")
     public ResponseEntity<String> doDeposit(@RequestBody TransactionInformation transactionInformation) throws Exception {
         try {
             clienteService.newDeposit(transactionInformation);
-            return ResponseEntity.ok("Deposit successfully!");
+            return ResponseEntity.ok("Deposit Successfully!");
         } catch (EmailServiceException ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Deposit failed.");
         }
@@ -49,8 +49,8 @@ public class ClienteController {
     @PostMapping("/withdraw")
     public ResponseEntity<String> doWithdraw(@RequestBody TransactionInformation transactionInformation) throws Exception {
         try {
-            clienteService.newDeposit(transactionInformation);
-            return ResponseEntity.ok("Withdrawsuccessfully!");
+            clienteService.newWithdraw(transactionInformation);
+            return ResponseEntity.ok("Withdraw Successfully!");
         } catch (EmailServiceException ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Withdraw failed.");
         }
